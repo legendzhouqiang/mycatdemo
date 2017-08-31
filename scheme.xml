@@ -1,0 +1,65 @@
+<?xml version="1.0"?>
+<!DOCTYPE mycat:schema SYSTEM "schema.dtd">
+<mycat:schema xmlns:mycat="http://org.opencloudb/">
+    <!--在这一行参数里面,schema name定义了可以在MyCAT前端显示的逻辑数据库的名字,checkSQLschema这个参数为False的时候,表明MyCAT会自动忽略掉表名前的数据库名,比如说mydatabase1.test1,会被当做test1;sqlMaxLimit指定了SQL语句返回的行数限制-->
+    <schema name="TESTDB" checkSQLschema="false" sqlMaxLimit="100">
+        <!-- 主键范围规则 -->
+        <!-- 这一行代表在MyCAT前端会显示哪些表名,类似几行都代表一样的意思,这里强调的是表,而MyCAT并不会在配置文件里面定义表结构，如果在前端使用show create table ,MyCAT会显示正常的表结构信息,观察Debug日志,可以看到,MyCAT把命令分发给了dn1代表的数据库,然后把dn1的查询结果返回给了前端 可以判断,类似的数据库级别的一些查询指令,有可能是单独分发给某个节点,然后再把某个节点的信息返回给前端。
+        dataNode的意义很简单,这个逻辑表的数据存储在后端的哪几个数据库里面rule代表的是这个逻辑表students的具体切分策略,目前MyCAT只支持按照某一个特殊列,遵循一些特殊的规则来切分,如取模,枚举等,具体的留给之后细说                  
+            -->
+        <table name="travelrecord" dataNode="dn1,dn2,dn3" rule="auto-sharding-long"/>
+        <table name="company" primaryKey="ID" dataNode="dn3,dn2,dn1" rule="mod-long"/>
+        <table name="goods" primaryKey="ID" type="global" dataNode="dn1,dn2"/>
+        <!--求模分片随机规则 -->
+        <table name="hotnews" primaryKey="ID" dataNode="dn1,dn2,dn3"
+               rule="mod-long"/>
+        <table name="employee" primaryKey="ID" dataNode="dn1,dn2"
+               rule="sharding-by-intfile"/>
+        <table name="customer" primaryKey="ID" dataNode="dn1,dn2"
+               rule="sharding-by-intfile">
+            <!--
+               childtable我在测试中并没有实际用起来不过在MyCAT的设计文档里面有提到，childtable是一种依赖于父表的结构，
+               这意味着，childtable的joinkey会按照父表的parentKey的策略一起切分，当父表与子表进行连接，
+               且连接条件是childtable.joinKey=parenttable.parentKey时,不会进行跨库的连接.
+               -->
+            <childTable name="orders" primaryKey="ID" joinKey="customer_id"
+                        parentKey="id">
+                <childTable name="order_items" joinKey="order_id"
+                            parentKey="id"/>
+            </childTable>
+            <childTable name="customer_addr" primaryKey="ID" joinKey="customer_id"
+                        parentKey="id"/>
+        </table>
+
+        <!-- 全局表是自动克隆到所有定义的数据节点，这样可以与拆分节点的任何表连接查询，是在同一个数据节点-->
+        <table name="news_table" primaryKey="ID" type="global" dataNode="dn1,dn2,dn3"/>
+    </schema>
+
+    <dataNode name="dn1" dataHost="localhost1" database="TESTDB1"/>
+    <dataNode name="dn2" dataHost="localhost1" database="TESTDB2"/>
+    <dataNode name="dn3" dataHost="localhost1" database="TESTDB3"/>
+
+    <!--
+          dataHost配置的是实际的后端数据库集群,大部分参数简单易懂,这里就不一个个介绍了,只介绍比较重要的两个参数,writeType和balance.
+         -->
+    <!-- writeType和balance是用来控制后端集群的读写分离的关键参数，这里我用了双主双从的集群配置
+        这里的测试过程比较麻烦，所以直接贴结论：
+       1.balance=0时,读操作都在localhost上(localhost失败时,后端直接失败)
+       2.balance=1时,读操作会随机分散在localhost1和两个readhost上面(localhost失败时,写操作会在localhost1,如果localhost1再失败,则无法进行写操作)
+       3.balance=2时,写操作会在localhost上，读操作会随机分散在localhost1,localhost1和两个readhost上面(同上)
+       4.writeType=0时,写操作会在localhost上,如果localhost失败,会自动切换到localhost1,localhost恢复以后并不会切换回localhost进行写操作
+       5.writeType=1时,写操作会随机分布在localhost和localhost1上,单点失败并不会影响集群的写操作,但是后端的从库会无法从挂掉的主库获取更新,会在读数据的时候出现数据不一致
+       举例:localhost失败了,写操作会在localhost1上面进行,localhost1的主从正常运行,但是localhost的从库无法从localhost获取更新,localhost的从库于其他库出现数据不一致
+     -->
+    <dataHost name="localhost1" maxCon="1000" minCon="10" balance="0"
+              writeType="0" dbType="mysql" dbDriver="native" switchType="1" slaveThreshold="100">
+        <heartbeat>select user()</heartbeat>
+        <!-- can have multi write hosts -->
+        <writeHost host="hostM1" url="localhost:3306" user="root"
+                   password="123456">
+            <!-- can have multi read hosts -->
+            <!--<readHost host="hostS2" url="192.168.1.200:3306" user="root" password="xxx" />-->
+        </writeHost>
+    </dataHost>
+
+</mycat:schema>
