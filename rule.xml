@@ -110,9 +110,10 @@
         <property name="splitOneDay">24</property>
     </function>
     <function name="partbymonth"
-              class="org.opencloudb.route.function.PartitionByMonth">
-        <property name="dateFormat">yyyy-MM-dd</property>
-        <property name="sBeginDate">2015-01-01</property>
+              class="io.mycat.route.function.PartitionByMonth">
+        <property name="dateFormat">yyyy-MM-dd HH:mm:ss</property>
+        <!--用create_time减去sBeginDate后得到存放的目标datanode-->
+        <property name="sBeginDate">2017-01-01 00:00:00</property>
     </function>
 
     <function name="rang-mod" class="org.opencloudb.route.function.PartitionByRangeMod">
