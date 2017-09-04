@@ -1,13 +1,12 @@
-package com.qinchy.mycatdemo.dao;
+package com.qinchy.mycatdemo.service;
 
 import com.qinchy.mycatdemo.model.Customer;
 import com.qinchy.mycatdemo.model.CustomerExample;
-import java.util.List;
 import org.apache.ibatis.annotations.Param;
-import org.springframework.stereotype.Component;
 
-@Component
-public interface CustomerMapper {
+import java.util.List;
+
+public interface CustomerService {
     int countByExample(CustomerExample example);
 
     int deleteByExample(CustomerExample example);

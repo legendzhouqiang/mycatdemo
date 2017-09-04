@@ -1,4 +1,4 @@
-package com.qinchy.mycatdemobiz;
+package com.qinchy.mycatdemo;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;

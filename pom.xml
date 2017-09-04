@@ -16,6 +16,7 @@
 		<module>mycatdemo-dao</module>
 		<module>mycatdemo-common</module>
 		<module>mycatdemo-api</module>
+		<module>mycatdemo-biz</module>
 	</modules>
 
 	<parent>

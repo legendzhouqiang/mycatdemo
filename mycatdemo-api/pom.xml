@@ -11,5 +11,12 @@
 
     <artifactId>mycatdemo-api</artifactId>
 
+    <dependencies>
+        <dependency>
+            <groupId>com.qinchy</groupId>
+            <artifactId>mycatdemo-dao</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+        </dependency>
+    </dependencies>
 
 </project>
